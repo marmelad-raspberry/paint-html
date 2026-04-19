@@ -222,9 +222,9 @@
         #layers-panel {
             display: none;
             position: fixed;
-            bottom: 55px; /* Subido ligeramente para dar espacio al indicador */
+            bottom: 55px; 
             right: 15px;
-            width: 250px;
+            width: 290px;
             background: #2c2c2c;
             border: 1px solid #555;
             border-radius: 12px;
@@ -238,13 +238,13 @@
 
         #layers-list {
             display: flex; flex-direction: column; gap: 8px;
-            max-height: 200px; overflow-y: auto; margin-bottom: 10px;
+            max-height: 250px; overflow-y: auto; margin-bottom: 10px;
         }
 
         .layer-item {
             display: flex; align-items: center; justify-content: space-between;
-            background: #3a3a3a; padding: 8px; border-radius: 6px;
-            cursor: pointer; border: 2px solid transparent; gap: 8px;
+            background: #3a3a3a; padding: 6px; border-radius: 6px;
+            cursor: pointer; border: 2px solid transparent; gap: 6px;
             transition: background 0.1s, border-color 0.1s;
         }
 
@@ -262,6 +262,13 @@
         }
         .layer-btn:hover { background: #666; }
         .layer-btn:disabled { cursor: not-allowed; opacity: 0.5; background: #444; }
+
+        .layer-thumb {
+            width: 32px; height: 32px;
+            background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+            border: 1px solid #555; border-radius: 4px;
+            object-fit: contain; image-rendering: pixelated;
+        }
 
         /* Modal Cámara & Crop */
         .modal-overlay {
@@ -363,6 +370,7 @@
                     <div class="divider"></div>
                     <button id="btn-grayscale" class="color-swatch" title="Filtro Grises" style="background: linear-gradient(to right, #666, #ccc);"></button>
                     <button id="btn-invert" class="color-swatch" title="Filtro Invertir" style="background: conic-gradient(#fff 0.5turn, #000 0.5turn); border-color: #777;"></button>
+                    <button id="btn-transparent" class="color-swatch" title="Color Transparente" style="background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 10px 10px; border-color: #777;"></button>
 
                     <div class="divider"></div>
                     <span>Recientes:</span>
@@ -511,17 +519,14 @@
                     
                     if (type === 'click') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-                        // Volumen subido de 0.05 a 0.5
                         gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
                     } else if (type === 'undo') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.setValueAtTime(400, now + 0.05);
-                        // Volumen subido de 0.05 a 0.5
                         gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'redo') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.05);
-                        // Volumen subido de 0.05 a 0.5
                         gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'delete') {
@@ -531,44 +536,53 @@
                         for(let i=0; i<bufferSize; i++) data[i] = Math.random()*2-1;
                         const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
                         noise.connect(gain);
-                        // Volumen del ruido subido de 0.1 a 0.8 (muy alto)
                         gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                         noise.start(now); noise.stop(now + 0.15);
                     } else if (type === 'fill') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
-                        // Volumen subido de 0.05 a 0.5
                         gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
                         osc.start(now); osc.stop(now + 0.2);
                     } else if (type === 'drawStart') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
-                        // Volumen subido de 0.02 a 0.3
                         gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
                     } else if (type === 'drawing') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(400 + Math.random()*200, now);
-                        // Volumen de dibujado subido de 0.01 a 0.15 (suficiente para escucharse claro sin aturdir al mantener presionado)
                         gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
                         osc.start(now); osc.stop(now + 0.03);
                     } else if (type === 'lineEnd') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
-                        // Volumen subido de 0.05 a 0.5
                         gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'sticker') {
                         osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
-                        // Volumen subido de 0.08 a 0.6
                         gain.gain.setValueAtTime(0.6, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'layer') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(900, now); osc.frequency.setValueAtTime(1200, now + 0.05);
-                        // Volumen subido de 0.03 a 0.3
                         gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'text') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(1000, now);
-                        // Volumen subido de 0.04 a 0.4
                         gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
+                    } else if (type === 'picker') {
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1600, now + 0.1);
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                        osc.start(now); osc.stop(now + 0.1);
+                    } else if (type === 'select') {
+                        osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(800, now + 0.05);
+                        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
+                        osc.start(now); osc.stop(now + 0.15);
+                    } else if (type === 'gradient') {
+                        osc.type = 'square'; 
+                        osc.frequency.setValueAtTime(261.63, now);
+                        osc.frequency.setValueAtTime(329.63, now + 0.04);
+                        osc.frequency.setValueAtTime(392.00, now + 0.08);
+                        osc.frequency.setValueAtTime(523.25, now + 0.12);
+                        gain.gain.setValueAtTime(0.3, now); 
+                        gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+                        osc.start(now); osc.stop(now + 0.25);
                     }
                 } catch(e) {}
             }
@@ -706,6 +720,88 @@
             }
         }
 
+        function updateActiveLayerThumbnail() {
+            if (layersPanel.style.display !== 'flex') return;
+            const list = document.getElementById('layers-list');
+            const items = list.querySelectorAll('.layer-item');
+            const domIndex = layers.length - 1 - activeLayerIndex;
+            if (items[domIndex]) {
+                const thumb = items[domIndex].querySelector('.layer-thumb');
+                if (thumb && layers[activeLayerIndex]) {
+                    if (layers[activeLayerIndex].canvas.width > 0) {
+                        thumb.src = layers[activeLayerIndex].canvas.toDataURL('image/png');
+                    }
+                }
+            }
+        }
+
+        // ====== GESTION DE ARRASTRE DE CAPAS ======
+        let activeDragItem = null;
+        let dragStartIndex = -1;
+        let originalY = 0;
+
+        function onDragLayer(e) {
+            if (!activeDragItem) return;
+            e.preventDefault();
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const dy = clientY - originalY;
+            activeDragItem.style.transform = `translateY(${dy}px)`;
+        }
+
+        function endDragLayer(e) {
+            if (!activeDragItem) return;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            
+            document.removeEventListener('mousemove', onDragLayer);
+            document.removeEventListener('touchmove', onDragLayer);
+            document.removeEventListener('mouseup', endDragLayer);
+            document.removeEventListener('touchend', endDragLayer);
+            
+            activeDragItem.style.position = '';
+            activeDragItem.style.zIndex = '';
+            activeDragItem.style.opacity = '';
+            activeDragItem.style.boxShadow = '';
+            activeDragItem.style.transform = '';
+            
+            const items = Array.from(document.querySelectorAll('.layer-item'));
+            let closestItem = null;
+            let minDistance = Infinity;
+            
+            for (let item of items) {
+                const rect = item.getBoundingClientRect();
+                const centerY = rect.top + rect.height / 2;
+                const distance = Math.abs(clientY - centerY);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestItem = item;
+                }
+            }
+            
+            let targetIndex = closestItem ? parseInt(closestItem.dataset.index) : dragStartIndex;
+            if (targetIndex === 0) targetIndex = 1; // No bajar de la capa base
+
+            if (targetIndex !== null && !isNaN(targetIndex) && targetIndex !== dragStartIndex) {
+                saveState();
+                const layerToMove = layers.splice(dragStartIndex, 1)[0];
+                layers.splice(targetIndex, 0, layerToMove);
+                
+                if (activeLayerIndex === dragStartIndex) {
+                    activeLayerIndex = targetIndex;
+                } else if (dragStartIndex < activeLayerIndex && targetIndex >= activeLayerIndex) {
+                    activeLayerIndex--;
+                } else if (dragStartIndex > activeLayerIndex && targetIndex <= activeLayerIndex) {
+                    activeLayerIndex++;
+                }
+                
+                layersContainer.innerHTML = '';
+                layers.forEach(l => layersContainer.appendChild(l.canvas));
+                setActiveLayer(activeLayerIndex);
+            } else {
+                renderLayersUI();
+            }
+            activeDragItem = null;
+        }
+
         function renderLayersUI() {
             const list = document.getElementById('layers-list');
             list.innerHTML = '';
@@ -713,13 +809,59 @@
                 const l = layers[i];
                 const item = document.createElement('div');
                 item.className = 'layer-item' + (i === activeLayerIndex ? ' active' : '');
+                item.dataset.index = i;
                 
                 item.onclick = (e) => {
-                    if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                    if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.className !== 'layer-reorder') {
                         if (activeLayerIndex !== i) sfx.play('layer');
                         setActiveLayer(i);
                     }
                 };
+
+                const reorderDiv = document.createElement('div');
+                reorderDiv.className = 'layer-reorder';
+                
+                if (i !== 0) { 
+                    reorderDiv.innerHTML = '≡';
+                    reorderDiv.style.cursor = 'grab';
+                    reorderDiv.style.fontSize = '24px';
+                    reorderDiv.style.color = '#ccc';
+                    reorderDiv.style.padding = '0 8px';
+                    reorderDiv.title = 'Arrastrar para reordenar';
+                    
+                    const startDrag = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (layers.length <= 2) return;
+
+                        activeDragItem = item;
+                        dragStartIndex = i;
+                        originalY = e.touches ? e.touches[0].clientY : e.clientY;
+                        
+                        item.style.position = 'relative';
+                        item.style.zIndex = '1000';
+                        item.style.opacity = '0.9';
+                        item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.8)';
+                        
+                        document.addEventListener('mousemove', onDragLayer);
+                        document.addEventListener('touchmove', onDragLayer, {passive: false});
+                        document.addEventListener('mouseup', endDragLayer);
+                        document.addEventListener('touchend', endDragLayer);
+                    };
+
+                    reorderDiv.addEventListener('mousedown', startDrag);
+                    reorderDiv.addEventListener('touchstart', startDrag, {passive: false});
+                } else {
+                    reorderDiv.innerHTML = '🔒';
+                    reorderDiv.style.fontSize = '12px';
+                    reorderDiv.style.padding = '0 8px';
+                }
+
+                const thumb = document.createElement('img');
+                thumb.className = 'layer-thumb';
+                if (l.canvas.width > 0) {
+                    try { thumb.src = l.canvas.toDataURL('image/png'); } catch(e){}
+                }
 
                 const visBtn = document.createElement('button');
                 visBtn.className = 'layer-btn';
@@ -755,6 +897,8 @@
                     };
                 }
 
+                item.appendChild(reorderDiv);
+                item.appendChild(thumb);
                 item.appendChild(visBtn);
                 item.appendChild(nameSpan);
                 item.appendChild(opacInp);
@@ -778,6 +922,7 @@
         bindButton(btnLayers, () => {
             const isHidden = layersPanel.style.display === 'none' || layersPanel.style.display === '';
             layersPanel.style.display = isHidden ? 'flex' : 'none';
+            if(isHidden) renderLayersUI(); 
         });
 
         bindButton(btnAddLayer, addLayer);
@@ -869,6 +1014,7 @@
 
         const btnGrayscale = document.getElementById('btn-grayscale');
         const btnInvert = document.getElementById('btn-invert');
+        const btnTransparent = document.getElementById('btn-transparent');
 
         // Variables de Gradiente
         const gradColor1Btn = document.getElementById('grad-color-1');
@@ -972,6 +1118,7 @@
 
         function renderCrop() {
             if(!cropImg) return;
+            cropCtx.imageSmoothingEnabled = false; // ANULAMOS INTERPOLADO
             cropCtx.clearRect(0,0,300,300);
             cropCtx.drawImage(cropImg, cropX, cropY, cropImg.width * cropScale, cropImg.height * cropScale);
         }
@@ -1094,13 +1241,13 @@
         };
 
         let isDrawing = false;
-        let lastDrawSound = 0; // Control de frecuencia de sonido para dibujo
+        let lastDrawSound = 0; 
 
         let brushSize = parseInt(sizeSlider.value);
         let brushShape = 'circle';
         let currentTool = 'brush'; 
         let currentColor = '#000000'; 
-        let specialColor = 'none'; // 'none', 'grayscale', 'invert'
+        let specialColor = 'none'; // 'none', 'grayscale', 'invert', 'transparent'
         let isRainbow = false; 
         let rainbowHue = 0;    
         let customCanvasSize = false; 
@@ -1138,7 +1285,7 @@
         };
 
         function getActiveSpecialColor() {
-            if (currentTool === 'eraser' || currentTool === 'fill' || currentTool === 'gradient' || currentTool === 'picker' || currentTool === 'select') return 'none';
+            if (currentTool === 'eraser' || currentTool === 'gradient' || currentTool === 'picker' || currentTool === 'select') return 'none';
             if (currentTool === 'sticker' && !chkStickerColor.checked) return 'none';
             return specialColor;
         }
@@ -1153,13 +1300,13 @@
             tCtx.drawImage(cvs, 0, 0);
 
             const context = cvs.getContext('2d', { willReadFrequently: true });
-            context.imageSmoothingEnabled = false;
 
             if (type === 'rot-l' || type === 'rot-r') {
                 cvs.width = temp.height;
                 cvs.height = temp.width;
             }
 
+            context.imageSmoothingEnabled = false;
             context.clearRect(0, 0, cvs.width, cvs.height);
             context.save();
 
@@ -1227,12 +1374,11 @@
         bindButton(btnFileMenu, () => fileDropdown.classList.toggle('show'));
         
         bindButton(btnFillMenu, () => {
-            // Cambiar la lógica para abrir el menú SOLO si ya estamos en un modo de relleno
             if (currentTool === 'fill' || currentTool === 'gradient') {
                 fillDropdown.classList.toggle('show');
             } else {
                 fillDropdown.classList.remove('show');
-                setTool('fill'); // Cambia a herramienta de relleno sin abrir el menú
+                setTool('fill'); 
             }
         });
 
@@ -1327,6 +1473,8 @@
             if (currentTool === 'sticker') {
                 brushCanvas.width = brushSize;
                 brushCanvas.height = brushSize;
+                brushCtx.imageSmoothingEnabled = false; // ANULAMOS INTERPOLADO
+
                 brushCtx.clearRect(0, 0, brushSize, brushSize);
 
                 if (activeStickerIndex >= 0 && stickers[activeStickerIndex]) {
@@ -1337,6 +1485,7 @@
                         brushCtx.globalCompositeOperation = 'multiply';
                         if (activeSpec === 'grayscale') brushCtx.fillStyle = '#808080';
                         else if (activeSpec === 'invert') brushCtx.fillStyle = '#FFFFFF';
+                        else if (activeSpec === 'transparent') brushCtx.fillStyle = 'rgba(255,255,255,1)';
                         else brushCtx.fillStyle = isRainbow ? `hsl(${rainbowHue}, 100%, 50%)` : currentColor;
                         
                         brushCtx.fillRect(0, 0, brushSize, brushSize);
@@ -1358,10 +1507,13 @@
                 
                 brushCanvas.width = width;
                 brushCanvas.height = height;
+                brushCtx.imageSmoothingEnabled = false; // ANULAMOS INTERPOLADO
+
                 brushCtx.clearRect(0, 0, width, height);
                 
                 if (activeSpec === 'grayscale') brushCtx.fillStyle = '#808080';
                 else if (activeSpec === 'invert') brushCtx.fillStyle = '#FFFFFF';
+                else if (activeSpec === 'transparent') brushCtx.fillStyle = 'rgba(255,255,255,1)';
                 else brushCtx.fillStyle = isRainbow ? `hsl(${rainbowHue}, 100%, 50%)` : currentColor;
                 
                 brushCtx.font = `bold ${brushSize}px sans-serif`;
@@ -1382,9 +1534,10 @@
 
             brushCanvas.width = brushSize;
             brushCanvas.height = brushSize;
+            brushCtx.imageSmoothingEnabled = false; // ANULAMOS INTERPOLADO
             brushCtx.clearRect(0, 0, brushSize, brushSize);
             
-            if (currentTool === 'eraser') {
+            if (currentTool === 'eraser' || activeSpec === 'transparent') {
                 brushCtx.fillStyle = 'rgba(255,255,255,1)'; 
             } else if (activeSpec === 'grayscale') {
                 brushCtx.fillStyle = '#808080';
@@ -1471,6 +1624,8 @@
                     if (specialColor === 'grayscale') swatch.classList.add('active');
                 } else if (swatch.id === 'btn-invert') {
                     if (specialColor === 'invert') swatch.classList.add('active');
+                } else if (swatch.id === 'btn-transparent') {
+                    if (specialColor === 'transparent') swatch.classList.add('active');
                 } else {
                     const checkColor = (currentTool === 'gradient') ? 
                         (activeGradientSlot === 1 ? gradientColor1 : gradientColor2) : 
@@ -1523,7 +1678,7 @@
 
         bindButton(btnGrayscale, () => { isRainbow = false; specialColor = 'grayscale'; if (currentTool === 'eraser' || currentTool === 'picker' || currentTool === 'select') setTool('brush'); else generateBrush(); updateActiveSwatch(); updateCursorStyle(); });
         bindButton(btnInvert, () => { isRainbow = false; specialColor = 'invert'; if (currentTool === 'eraser' || currentTool === 'picker' || currentTool === 'select') setTool('brush'); else generateBrush(); updateActiveSwatch(); updateCursorStyle(); });
-
+        bindButton(btnTransparent, () => { isRainbow = false; specialColor = 'transparent'; if (currentTool === 'eraser' || currentTool === 'picker' || currentTool === 'select') setTool('brush'); else generateBrush(); updateActiveSwatch(); updateCursorStyle(); });
 
         renderColors();
         customColorInput.value = '#000000'; 
@@ -1604,6 +1759,7 @@
                 try { ctx.drawImage(selection.canvas, selection.x, selection.y, selection.w, selection.h); } catch(e) {}
                 selection.state = 'none';
                 drawOverlay(); saveState(); updateSelectionButtons();
+                updateActiveLayerThumbnail();
             }
         }
         
@@ -1741,6 +1897,7 @@
         }
 
         function pickColor(x, y) {
+            sfx.play('picker');
             const safeX = Math.max(0, Math.min(canvas.width - 1, Math.floor(x)));
             const safeY = Math.max(0, Math.min(canvas.height - 1, Math.floor(y)));
             const tempCanvas = document.createElement('canvas');
@@ -1893,6 +2050,7 @@
 
                     overlayCanvas.width = img.width; overlayCanvas.height = img.height;
                     overlayCanvas.style.width = img.width + 'px'; overlayCanvas.style.height = img.height + 'px';
+                    overlayCtx.imageSmoothingEnabled = false;
                     zoomLayer.style.width = img.width + 'px'; zoomLayer.style.height = img.height + 'px';
                     
                     strokeCanvas.width = img.width; strokeCanvas.height = img.height;
@@ -1963,6 +2121,7 @@
 
                     overlayCanvas.width = targetWidth; overlayCanvas.height = targetHeight;
                     overlayCanvas.style.width = targetWidth + 'px'; overlayCanvas.style.height = targetHeight + 'px';
+                    overlayCtx.imageSmoothingEnabled = false;
                     zoomLayer.style.width = targetWidth + 'px'; zoomLayer.style.height = targetHeight + 'px';
                     
                     strokeCanvas.width = targetWidth; strokeCanvas.height = targetHeight;
@@ -2078,6 +2237,7 @@
 
             overlayCanvas.width = targetWidth; overlayCanvas.height = targetHeight;
             overlayCanvas.style.width = targetWidth + 'px'; overlayCanvas.style.height = targetHeight + 'px';
+            overlayCtx.imageSmoothingEnabled = false;
             zoomLayer.style.width = targetWidth + 'px'; zoomLayer.style.height = targetHeight + 'px';
 
             strokeCanvas.width = targetWidth; strokeCanvas.height = targetHeight;
@@ -2114,11 +2274,17 @@
         updateCursorSize(); 
 
         function drawOverlay() {
+            overlayCanvas.style.mixBlendMode = 'normal';
             overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
             
             if (isDrawing && currentTool === 'line') {
                 const activeSpec = getActiveSpecialColor();
-                if (activeSpec === 'invert' || activeSpec === 'grayscale') {
+                
+                if (activeSpec === 'transparent' || currentTool === 'eraser') {
+                    overlayCanvas.style.mixBlendMode = 'difference';
+                    overlayCtx.globalCompositeOperation = 'source-over';
+                    applyBresenham(overlayCtx, Math.floor(lineStartX), Math.floor(lineStartY), Math.floor(cursorX), Math.floor(cursorY));
+                } else if (activeSpec === 'invert' || activeSpec === 'grayscale') {
                     strokeCtx.clearRect(0, 0, strokeCanvas.width, strokeCanvas.height);
                     applyBresenham(strokeCtx, Math.floor(lineStartX), Math.floor(lineStartY), Math.floor(cursorX), Math.floor(cursorY));
                     
@@ -2131,7 +2297,6 @@
                     
                     overlayCtx.globalCompositeOperation = 'source-over';
                 } else {
-                    if (currentTool === 'eraser') overlayCtx.globalCompositeOperation = 'destination-out';
                     applyBresenham(overlayCtx, Math.floor(lineStartX), Math.floor(lineStartY), Math.floor(cursorX), Math.floor(cursorY));
                     overlayCtx.globalCompositeOperation = 'source-over';
                 }
@@ -2268,7 +2433,7 @@
 
                         ctx.globalCompositeOperation = 'source-over';
                     } else {
-                        if (currentTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+                        if (currentTool === 'eraser' || activeSpec === 'transparent') ctx.globalCompositeOperation = 'destination-out';
                         applyBresenham(ctx, Math.floor(oldX), Math.floor(oldY), Math.floor(cursorX), Math.floor(cursorY));
                         ctx.globalCompositeOperation = 'source-over'; 
                     }
@@ -2389,9 +2554,36 @@
             saveState(); 
             if (currentTool === 'fill') {
                 sfx.play('fill');
-                const fillCol = isRainbow ? `hsl(${rainbowHue}, 100%, 50%)` : currentColor;
-                floodFill(Math.floor(cursorX), Math.floor(cursorY), colorToRgbaArray(fillCol));
+                const activeSpec = getActiveSpecialColor();
+                let fillColArr;
+
+                const startX = Math.floor(cursorX);
+                const startY = Math.floor(cursorY);
+
+                if (activeSpec === 'transparent') {
+                    fillColArr = [0, 0, 0, 0];
+                } else if (activeSpec === 'invert' || activeSpec === 'grayscale') {
+                    const startPos = (startY * canvas.width + startX) * 4;
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const sr = imageData.data[startPos];
+                    const sg = imageData.data[startPos + 1];
+                    const sb = imageData.data[startPos + 2];
+                    const sa = imageData.data[startPos + 3];
+
+                    if (activeSpec === 'invert') {
+                        fillColArr = [255 - sr, 255 - sg, 255 - sb, sa];
+                    } else { // grayscale
+                        const gray = Math.round(0.299 * sr + 0.587 * sg + 0.114 * sb);
+                        fillColArr = [gray, gray, gray, sa];
+                    }
+                } else {
+                    const fillCol = isRainbow ? `hsl(${rainbowHue}, 100%, 50%)` : currentColor;
+                    fillColArr = colorToRgbaArray(fillCol);
+                }
+
+                floodFill(startX, startY, fillColArr);
                 if (isRainbow) rainbowHue = (rainbowHue + 45) % 360; 
+                updateActiveLayerThumbnail();
                 return;
             }
 
@@ -2431,7 +2623,7 @@
 
                 ctx.globalCompositeOperation = 'source-over';
             } else {
-                if (currentTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+                if (currentTool === 'eraser' || activeSpec === 'transparent') ctx.globalCompositeOperation = 'destination-out';
                 applyBresenham(ctx, Math.floor(cursorX), Math.floor(cursorY), Math.floor(cursorX), Math.floor(cursorY));
                 ctx.globalCompositeOperation = 'source-over';
             }
@@ -2461,16 +2653,18 @@
 
                     ctx.globalCompositeOperation = 'source-over';
                 } else {
-                    if (currentTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+                    if (currentTool === 'eraser' || activeSpec === 'transparent') ctx.globalCompositeOperation = 'destination-out';
                     applyBresenham(ctx, Math.floor(lineStartX), Math.floor(lineStartY), Math.floor(cursorX), Math.floor(cursorY));
                     ctx.globalCompositeOperation = 'source-over';
                 }
                 drawOverlay(); 
                 updateCursorPosition();
+                updateActiveLayerThumbnail();
                 return;
             }
 
             if (currentTool === 'gradient') {
+                sfx.play('gradient');
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = canvas.width;
                 tempCanvas.height = canvas.height;
@@ -2494,6 +2688,7 @@
                 
                 drawOverlay();
                 updateCursorPosition();
+                updateActiveLayerThumbnail();
                 return;
             }
 
@@ -2503,6 +2698,7 @@
                     let sw = Math.max(1, Math.floor(Math.abs(cursorX - selection.startX))); let sh = Math.max(1, Math.floor(Math.abs(cursorY - selection.startY)));
                     
                     if (sw > 2 && sh > 2) { 
+                        sfx.play('select');
                         saveState(); selection.x = sx; selection.y = sy; selection.w = sw; selection.h = sh;
                         selection.canvas.width = sw; selection.canvas.height = sh;
                         const sCtx = selection.canvas.getContext('2d'); sCtx.imageSmoothingEnabled = false;
@@ -2519,6 +2715,8 @@
                 } else if (selection.state === 'floating') { selection.action = null; drawOverlay(); }
                 updateCursorPosition();
             }
+            
+            updateActiveLayerThumbnail();
         }
 
         drawBtn.addEventListener('touchstart', (e) => { 
