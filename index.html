@@ -224,7 +224,8 @@
             position: fixed;
             bottom: 55px; 
             right: 15px;
-            width: 290px;
+            width: 90vw;
+            max-width: 380px;
             background: #2c2c2c;
             border: 1px solid #555;
             border-radius: 12px;
@@ -252,7 +253,7 @@
             border-color: #0078ff; background: #4a4a4a;
         }
 
-        .layer-item span { flex: 1; font-size: 14px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+        .layer-item span { flex: 1; font-size: 13px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .layer-opacity { width: 50px; cursor: pointer; }
         .layer-opacity:disabled { cursor: not-allowed; opacity: 0.5; }
         
@@ -325,7 +326,7 @@
         </div>
 
         <div id="controls">
-            <div id="menu-panel">
+            <div id="menu-panel" class="hidden">
                 <div class="toolbar-row">
                     <div class="dropdown">
                         <button id="btn-file-menu" class="tool-btn" title="Archivo">📁 Archivo ▾</button>
@@ -412,6 +413,9 @@
                             <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; white-space: nowrap;">
                                 <input type="checkbox" id="chk-sticker-color" style="width:16px; height:16px;"> Coloreable
                             </label>
+                            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; white-space: nowrap;">
+                                <input type="checkbox" id="chk-sticker-interpolation" style="width:16px; height:16px;"> Suavizar
+                            </label>
                         </div>
                         <div id="sticker-inventory" style="display: flex; gap: 8px; overflow-x: auto; padding: 5px; background: #222; border-radius: 5px; min-height: 50px; align-items: center;">
                             <span style="color: #777; font-size: 12px; margin-left: 5px;">Aún no hay stickers guardados</span>
@@ -443,7 +447,7 @@
             </div>
 
             <div class="secondary-actions">
-                <button id="toggle-menu-btn" title="Ocultar/Mostrar Menú">👁️</button>
+                <button id="toggle-menu-btn" title="Ocultar/Mostrar Menú">🖍️</button>
                 <div class="btn-group-right">
                     <button id="btn-undo" title="Deshacer">↩️</button>
                     <button id="btn-redo" title="Rehacer">↪️</button>
@@ -700,6 +704,11 @@
 
         function setActiveLayer(index) {
             if(index < 0 || index >= layers.length) return;
+            
+            if (selection.state !== 'none') {
+                commitSelection();
+            }
+            
             activeLayerIndex = index;
             canvas = layers[index].canvas;
             ctx = layers[index].ctx;
@@ -712,6 +721,44 @@
             saveState();
             layers[index].canvas.remove();
             layers.splice(index, 1);
+            if (activeLayerIndex >= index) {
+                setActiveLayer(Math.max(0, activeLayerIndex - 1));
+            } else {
+                renderLayersUI();
+                updateLayerOpacities();
+            }
+        }
+
+        function duplicateLayer(index) {
+            saveState();
+            const sourceLayer = layers[index];
+            const newLayer = createLayerObj(sourceLayer.name + " (Copia)", sourceLayer.visible, sourceLayer.opacity, sourceLayer.canvas.width, sourceLayer.canvas.height);
+            newLayer.ctx.drawImage(sourceLayer.canvas, 0, 0);
+            
+            layers.splice(index + 1, 0, newLayer);
+            
+            layersContainer.innerHTML = '';
+            layers.forEach(l => layersContainer.appendChild(l.canvas));
+            
+            setActiveLayer(index + 1);
+        }
+
+        function mergeDown(index) {
+            if (index <= 0) return; 
+            saveState();
+            const topLayer = layers[index];
+            const bottomLayer = layers[index - 1];
+
+            bottomLayer.ctx.save();
+            bottomLayer.ctx.globalAlpha = topLayer.opacity;
+            if (topLayer.visible) {
+                bottomLayer.ctx.drawImage(topLayer.canvas, 0, 0);
+            }
+            bottomLayer.ctx.restore();
+
+            topLayer.canvas.remove();
+            layers.splice(index, 1);
+
             if (activeLayerIndex >= index) {
                 setActiveLayer(Math.max(0, activeLayerIndex - 1));
             } else {
@@ -903,15 +950,30 @@
                 item.appendChild(nameSpan);
                 item.appendChild(opacInp);
 
+                const dupBtn = document.createElement('button');
+                dupBtn.innerText = '📄';
+                dupBtn.className = 'layer-btn';
+                dupBtn.title = 'Duplicar capa';
+                dupBtn.onclick = (e) => { e.stopPropagation(); sfx.play('layer'); duplicateLayer(i); };
+                item.appendChild(dupBtn);
+
                 if (i !== 0) {
+                    const mergeBtn = document.createElement('button');
+                    mergeBtn.innerText = '🔽';
+                    mergeBtn.className = 'layer-btn';
+                    mergeBtn.title = 'Combinar hacia abajo';
+                    mergeBtn.onclick = (e) => { e.stopPropagation(); sfx.play('layer'); mergeDown(i); };
+                    item.appendChild(mergeBtn);
+
                     const delBtn = document.createElement('button');
                     delBtn.innerText = '🗑️';
                     delBtn.className = 'layer-btn';
-                    delBtn.onclick = () => { sfx.play('delete'); deleteLayer(i); };
+                    delBtn.title = 'Eliminar';
+                    delBtn.onclick = (e) => { e.stopPropagation(); sfx.play('delete'); deleteLayer(i); };
                     item.appendChild(delBtn);
                 } else {
                     const ph = document.createElement('div');
-                    ph.style.width = '24px';
+                    ph.style.width = '56px';
                     item.appendChild(ph);
                 }
 
@@ -977,6 +1039,7 @@
         const fillDropdown = document.getElementById('fill-dropdown');
         const btnFill = document.getElementById('btn-fill');
         const btnGradient = document.getElementById('btn-gradient');
+        let lastFillMode = 'fill';
         
         const btnPicker = document.getElementById('btn-picker');
         const btnSelect = document.getElementById('btn-select');
@@ -1042,6 +1105,7 @@
         let stickers = [];
         let activeStickerIndex = -1;
         const chkStickerColor = document.getElementById('chk-sticker-color');
+        const chkStickerInterpolation = document.getElementById('chk-sticker-interpolation');
 
         function renderStickerInventory() {
             const inv = document.getElementById('sticker-inventory');
@@ -1082,6 +1146,13 @@
         chkStickerColor.addEventListener('change', () => {
             if (currentTool === 'sticker') {
                 document.querySelector('.color-section').style.display = chkStickerColor.checked ? 'flex' : 'none';
+                generateBrush();
+                updateCursorStyle();
+            }
+        });
+
+        chkStickerInterpolation.addEventListener('change', () => {
+            if (currentTool === 'sticker') {
                 generateBrush();
                 updateCursorStyle();
             }
@@ -1237,7 +1308,7 @@
             nwse: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M9 3H3v6M15 21h6v-6M3 3l18 18"/></svg>`, 
             nesw: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M15 3h6v6M9 21H3v-6M21 3L3 21"/></svg>`,
             ns: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M12 3v18M9 6l3-3 3 3M9 18l3 3 3-3"/></svg>`, 
-            ew: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>`  
+            ew: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M3 12h18M6 9l-3 3 3 3M18 9l3 3-3-3"/></svg>`  
         };
 
         let isDrawing = false;
@@ -1373,17 +1444,17 @@
 
         bindButton(btnFileMenu, () => fileDropdown.classList.toggle('show'));
         
+        bindButton(btnFill, () => { lastFillMode = 'fill'; fillDropdown.classList.remove('show'); setTool('fill'); });
+        bindButton(btnGradient, () => { lastFillMode = 'gradient'; fillDropdown.classList.remove('show'); setTool('gradient'); });
+
         bindButton(btnFillMenu, () => {
             if (currentTool === 'fill' || currentTool === 'gradient') {
                 fillDropdown.classList.toggle('show');
             } else {
                 fillDropdown.classList.remove('show');
-                setTool('fill'); 
+                setTool(lastFillMode); 
             }
         });
-
-        bindButton(btnFill, () => { fillDropdown.classList.remove('show'); setTool('fill'); });
-        bindButton(btnGradient, () => { fillDropdown.classList.remove('show'); setTool('gradient'); });
 
         function handleOutsideClick(e) {
             if (!btnFileMenu.contains(e.target) && !fileDropdown.contains(e.target)) fileDropdown.classList.remove('show');
@@ -1473,7 +1544,7 @@
             if (currentTool === 'sticker') {
                 brushCanvas.width = brushSize;
                 brushCanvas.height = brushSize;
-                brushCtx.imageSmoothingEnabled = false; // ANULAMOS INTERPOLADO
+                brushCtx.imageSmoothingEnabled = chkStickerInterpolation ? chkStickerInterpolation.checked : false;
 
                 brushCtx.clearRect(0, 0, brushSize, brushSize);
 
@@ -1750,7 +1821,6 @@
         bindButton(toggleMenuBtn, () => {
             menuPanel.classList.toggle('hidden');
             toggleMenuBtn.innerHTML = menuPanel.classList.contains('hidden') ? '🖍️' : '👁️';
-            resizeCanvas(); 
         });
 
         function commitSelection() {
@@ -2015,7 +2085,9 @@
             fileDropdown.classList.remove('show');
             if (confirm('¿Estás seguro de que quieres crear un nuevo dibujo? Se perderá el progreso no guardado.')) {
                 selection.state = 'none'; drawOverlay(); updateSelectionButtons();
-                customCanvasSize = false; 
+                
+                // Forzamos tamaño de lienzo a la resolución del dispositivo actual
+                customCanvasSize = true; 
                 
                 layers.forEach(l => l.canvas.remove());
                 layers = [];
@@ -2023,7 +2095,28 @@
                 
                 undoStack = []; redoStack = []; 
                 addLayer(); 
-                resizeCanvas();
+                
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                
+                layers[0].canvas.width = w;
+                layers[0].canvas.height = h;
+                layers[0].canvas.style.width = w + 'px';
+                layers[0].canvas.style.height = h + 'px';
+                layers[0].ctx.fillStyle = '#f5f5f5';
+                layers[0].ctx.fillRect(0, 0, w, h);
+                
+                overlayCanvas.width = w; overlayCanvas.height = h;
+                overlayCanvas.style.width = w + 'px'; overlayCanvas.style.height = h + 'px';
+                zoomLayer.style.width = w + 'px'; zoomLayer.style.height = h + 'px';
+
+                strokeCanvas.width = w; strokeCanvas.height = h;
+                snapshotCanvas.width = w; snapshotCanvas.height = h;
+                gradientMaskCanvas.width = w; gradientMaskCanvas.height = h;
+
+                scale = 1; translateX = 0; translateY = 0;
+                cursorX = w / 2; cursorY = h / 2;
+                updateCursorPosition(); updateZoomLayer(); drawOverlay();
                 saveState();
             }
         });
@@ -2199,8 +2292,9 @@
 
         function resizeCanvas() {
             if (customCanvasSize) return;
-            const targetWidth = Math.max(layers.length > 0 ? layers[0].canvas.width || 0 : 0, container.clientWidth);
-            const targetHeight = Math.max(layers.length > 0 ? layers[0].canvas.height || 0 : 0, container.clientHeight);
+            // Use window size instead of container so it ignores the UI layout changes
+            const targetWidth = Math.max(layers.length > 0 ? layers[0].canvas.width || 0 : 0, window.innerWidth);
+            const targetHeight = Math.max(layers.length > 0 ? layers[0].canvas.height || 0 : 0, window.innerHeight);
             
             let skipResize = layers.length > 0 && layers[0].canvas.width === targetWidth && layers[0].canvas.height === targetHeight;
 
@@ -2254,8 +2348,31 @@
         let resizeTimeout;
         window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(resizeCanvas, 150); });
 
+        // INICIALIZACIÓN DE TAMAÑO FIJO DESDE EL INICIO
+        customCanvasSize = true;
         addLayer(); 
-        resizeCanvas();
+        
+        const initialW = window.innerWidth;
+        const initialH = window.innerHeight;
+        
+        layers[0].canvas.width = initialW;
+        layers[0].canvas.height = initialH;
+        layers[0].canvas.style.width = initialW + 'px';
+        layers[0].canvas.style.height = initialH + 'px';
+        layers[0].ctx.fillStyle = '#f5f5f5';
+        layers[0].ctx.fillRect(0, 0, initialW, initialH);
+        
+        overlayCanvas.width = initialW; overlayCanvas.height = initialH;
+        overlayCanvas.style.width = initialW + 'px'; overlayCanvas.style.height = initialH + 'px';
+        zoomLayer.style.width = initialW + 'px'; zoomLayer.style.height = initialH + 'px';
+        
+        strokeCanvas.width = initialW; strokeCanvas.height = initialH;
+        snapshotCanvas.width = initialW; snapshotCanvas.height = initialH;
+        gradientMaskCanvas.width = initialW; gradientMaskCanvas.height = initialH;
+        
+        cursorX = initialW / 2; cursorY = initialH / 2;
+        updateCursorPosition(); updateZoomLayer(); drawOverlay();
+
         undoStack = []; 
         saveState();
 
