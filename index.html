@@ -497,7 +497,7 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        const sfx = {
+            const sfx = {
             play: (type) => {
                 try {
                     initAudio();
@@ -511,15 +511,18 @@
                     
                     if (type === 'click') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(800, now);
-                        gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                        // Volumen subido de 0.05 a 0.5
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
                     } else if (type === 'undo') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.setValueAtTime(400, now + 0.05);
-                        gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                        // Volumen subido de 0.05 a 0.5
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'redo') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.05);
-                        gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                        // Volumen subido de 0.05 a 0.5
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'delete') {
                         const bufferSize = audioCtx.sampleRate * 0.15;
@@ -528,40 +531,49 @@
                         for(let i=0; i<bufferSize; i++) data[i] = Math.random()*2-1;
                         const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
                         noise.connect(gain);
-                        gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                        // Volumen del ruido subido de 0.1 a 0.8 (muy alto)
+                        gain.gain.setValueAtTime(0.8, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                         noise.start(now); noise.stop(now + 0.15);
                     } else if (type === 'fill') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
-                        gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+                        // Volumen subido de 0.05 a 0.5
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
                         osc.start(now); osc.stop(now + 0.2);
                     } else if (type === 'drawStart') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
-                        gain.gain.setValueAtTime(0.02, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                        // Volumen subido de 0.02 a 0.3
+                        gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
                     } else if (type === 'drawing') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(400 + Math.random()*200, now);
-                        gain.gain.setValueAtTime(0.01, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                        // Volumen de dibujado subido de 0.01 a 0.15 (suficiente para escucharse claro sin aturdir al mantener presionado)
+                        gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
                         osc.start(now); osc.stop(now + 0.03);
                     } else if (type === 'lineEnd') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
-                        gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                        // Volumen subido de 0.05 a 0.5
+                        gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'sticker') {
                         osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
-                        gain.gain.setValueAtTime(0.08, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                        // Volumen subido de 0.08 a 0.6
+                        gain.gain.setValueAtTime(0.6, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'layer') {
                         osc.type = 'triangle'; osc.frequency.setValueAtTime(900, now); osc.frequency.setValueAtTime(1200, now + 0.05);
-                        gain.gain.setValueAtTime(0.03, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+                        // Volumen subido de 0.03 a 0.3
+                        gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
                         osc.start(now); osc.stop(now + 0.1);
                     } else if (type === 'text') {
                         osc.type = 'square'; osc.frequency.setValueAtTime(1000, now);
-                        gain.gain.setValueAtTime(0.04, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                        // Volumen subido de 0.04 a 0.4
+                        gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                         osc.start(now); osc.stop(now + 0.05);
                     }
                 } catch(e) {}
             }
         };
+
 
         function getSfxForElement(id) {
             if (id === 'btn-undo') return 'undo';
